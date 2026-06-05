@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>نظام نتائج مدارس نيو فيجن الخاصة - لوحة الإدارة</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height: 100vh; }
+        
+        .header { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); box-shadow: 0 2px 20px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; flex-wrap: wrap; gap: 15px; }
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #ff8c00; background: white; padding: 3px; object-fit: contain; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.3s, box-shadow 0.3s; }
+        .logo-img:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .logo-text { font-size: 22px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .subtitle { font-size: 11px; color: #718096; margin-top: 2px; }
+        .nav-links { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .nav-links button, .student-link, .logout-header-btn { background: none; border: none; padding: 8px 20px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 10px; transition: all 0.3s; color: #4a5568; text-decoration: none; display: inline-block; }
+        .nav-links button:hover, .student-link:hover, .logout-header-btn:hover { background: #ff8c00; color: white; transform: translateY(-2px); }
+        .nav-links button.active { background: linear-gradient(135deg, #ff8c00, #ffd700); color: white; }
+        .student-link { background: #27ae60; color: white; }
+        .student-link:hover { background: #219a52; }
+        .logout-header-btn { background: #e74c3c; color: white; }
+        .logout-header-btn:hover { background: #c0392b; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .card { background: white; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 25px; transition: transform 0.3s, box-shadow 0.3s; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+        .card-header { background: linear-gradient(135deg, #2c3e50, #1a2a3a); color: white; padding: 18px 24px; font-size: 18px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .card-body { padding: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #2d3748; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 15px; font-size: 14px; transition: all 0.3s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #ff8c00; box-shadow: 0 0 0 3px rgba(255,140,0,0.1); }
+        .btn { padding: 12px 24px; border: none; border-radius: 15px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: inline-block; font-family: inherit; }
+        .btn-primary { background: linear-gradient(135deg, #2c3e50, #1a2a3a); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); background: linear-gradient(135deg, #ff8c00, #ffd700); color: #2c3e50; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; transform: translateY(-2px); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219a52; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-json { background: #8e44ad; color: white; }
+        .btn-json:hover { background: #6c3483; transform: translateY(-2px); }
+        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-box { background: white; padding: 20px; border-radius: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: transform 0.3s; }
+        .stat-box:hover { transform: translateY(-5px); }
+        .stat-number { font-size: 36px; font-weight: bold; background: linear-gradient(135deg, #ffd700, #ff8c00); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .stat-label { color: #718096; font-size: 13px; margin-top: 8px; }
+        .table { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+        .table th, .table td { padding: 12px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        .table th { background: #f7fafc; font-weight: 600; color: #2d3748; }
+        .table tr:hover td { background: #faf5ff; }
+        @media (min-width: 768px) { .table { display: table; } }
+        .alert { padding: 15px 20px; border-radius: 20px; margin-bottom: 20px; animation: slideIn 0.5s ease; position: fixed; top: 80px; left: 20px; right: 20px; z-index: 1000; max-width: 400px; margin: 0 auto; }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .alert-error { background: #f8d7da; color: #721c24; border-right: 4px solid #e74c3c; }
+        .alert-success { background: #d4edda; color: #155724; border-right: 4px solid #27ae60; }
+        .filter-bar { background: white; padding: 20px; border-radius: 25px; margin-bottom: 25px; }
+        .filter-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: flex-end; }
+        .bulk-actions { background: white; padding: 15px 20px; border-radius: 25px; margin-bottom: 25px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .student-card { background: white; border-radius: 25px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .student-card-header { background: linear-gradient(135deg, #2c3e50, #1a2a3a); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; cursor: pointer; }
+        .student-card-header:hover { background: linear-gradient(135deg, #ff8c00, #ffd700); }
+        .student-info { display: flex; flex-wrap: wrap; align-items: center; gap: 15px; }
+        .student-name { font-size: 18px; font-weight: bold; }
+        .student-detail { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+        .badge-hidden-count { background: #e74c3c; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+        .student-card-body { display: none; padding: 20px; overflow-x: auto; }
+        .student-card.expanded .student-card-body { display: block; }
+        .expand-icon { font-size: 20px; transition: transform 0.3s; }
+        .student-card.expanded .expand-icon { transform: rotate(180deg); }
+        .courses-table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        .courses-table th, .courses-table td { padding: 12px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        .courses-table th { background: #f7fafc; font-weight: 600; }
+        .checkbox-col { width: 40px; text-align: center; }
+        .checkbox-col input { width: 18px; height: 18px; cursor: pointer; }
+        .badge-visible { background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+        .badge-hidden { background: #e74c3c; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+        .badge-empty { background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+        .toggle-link { background: #e0e7ff; border: none; padding: 4px 12px; border-radius: 10px; cursor: pointer; margin: 0 3px; }
+        .toggle-link:hover { background: #c7d2fe; }
+        .export-buttons { display: flex; gap: 10px; margin-bottom: 20px; justify-content: flex-end; flex-wrap: wrap; }
+        .batch-update-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border-right: 4px solid #f59e0b; }
+        .json-instructions { background: #e8f4fd; border-right: 4px solid #3498db; padding: 15px; border-radius: 15px; margin-top: 15px; font-size: 13px; }
+        .save-indicator { position: fixed; bottom: 20px; right: 20px; background: #27ae60; color: white; padding: 8px 16px; border-radius: 30px; font-size: 12px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
+        .save-indicator.show { opacity: 1; }
+        .no-data-message { text-align: center; padding: 50px; color: #718096; }
+        
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .login-card {
+            background: white;
+            border-radius: 40px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
+        .login-title { font-size: 22px; font-weight: bold; color: #2c3e50; margin-bottom: 10px; }
+        .login-sub { color: #718096; font-size: 13px; margin-bottom: 30px; }
+        .login-input { width: 100%; padding: 15px; font-size: 18px; text-align: center; letter-spacing: 5px; border: 2px solid #e2e8f0; border-radius: 15px; margin-bottom: 20px; direction: ltr; }
+        .login-input:focus { outline: none; border-color: #ff8c00; box-shadow: 0 0 0 3px rgba(255,140,0,0.1); }
+        .login-btn { width: 100%; padding: 14px; font-size: 16px; font-weight: bold; background: linear-gradient(135deg, #2c3e50, #1a2a3a); color: white; border: none; border-radius: 15px; cursor: pointer; }
+        .login-btn:hover { transform: translateY(-2px); background: linear-gradient(135deg, #ff8c00, #ffd700); color: #2c3e50; }
+        .login-error { color: #e74c3c; font-size: 13px; margin-top: 10px; display: none; }
+        .change-pass-btn { background: none; border: none; color: #ff8c00; cursor: pointer; font-size: 12px; margin-top: 15px; text-decoration: underline; }
+        
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .stats-bar { grid-template-columns: 1fr; }
+            .filter-form { grid-template-columns: 1fr; }
+            .export-buttons { justify-content: stretch; }
+            .export-buttons .btn { flex: 1; text-align: center; }
+            .nav-links { width: 100%; justify-content: center; }
+            .card-header { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <div id="saveIndicator" class="save-indicator">💾 تم الحفظ</div>
+
+    <script>
+        const Auth = {
+            defaultPassword: '1234',
+            storageKey: 'neovision_admin_auth',
+            
+            checkAuth() {
+                const authData = localStorage.getItem(this.storageKey);
+                if (authData) {
+                    try {
+                        const { expires, passwordHash } = JSON.parse(authData);
+                        if (Date.now() < expires && passwordHash === this.hashPassword(this.getCurrentPassword())) {
+                            return true;
+                        }
+                    } catch(e) {}
+                }
+                return false;
+            },
+            
+            createSession() {
+                const session = {
+                    expires: Date.now() + (30 * 60 * 1000),
+                    passwordHash: this.hashPassword(this.getCurrentPassword())
+                };
+                localStorage.setItem(this.storageKey, JSON.stringify(session));
+            },
+            
+            logout() {
+                localStorage.removeItem(this.storageKey);
+                window.location.reload();
+            },
+            
+            getCurrentPassword() {
+                const saved = localStorage.getItem('neovision_admin_password');
+                return saved || this.defaultPassword;
+            },
+            
+            changePassword(oldPassword, newPassword) {
+                const current = this.getCurrentPassword();
+                if (this.hashPassword(oldPassword) !== this.hashPassword(current)) {
+                    return { success: false, message: 'كلمة المرور الحالية غير صحيحة' };
+                }
+                if (!newPassword || newPassword.length < 4) {
+                    return { success: false, message: 'كلمة المرور الجديدة يجب أن تكون 4 أرقام أو أكثر' };
+                }
+                localStorage.setItem('neovision_admin_password', newPassword);
+                this.createSession();
+                return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
+            },
+            
+            verifyPassword(password) {
+                const current = this.getCurrentPassword();
+                return this.hashPassword(password) === this.hashPassword(current);
+            },
+            
+            hashPassword(password) {
+                let hash = 0;
+                for (let i = 0; i < password.length; i++) {
+                    const char = password.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return hash.toString();
+            },
+            
+            showLoginScreen(onSuccess) {
+                const existingOverlay = document.querySelector('.login-overlay');
+                if (existingOverlay) existingOverlay.remove();
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'login-overlay';
+                overlay.innerHTML = `
+                    <div class="login-card">
+                        <div class="login-logo">🔐</div>
+                        <div class="login-title">لوحة الإدارة</div>
+                        <div class="login-sub">مدارس نيو فيجن الخاصة</div>
+                        <input type="password" id="loginPassword" class="login-input" placeholder="••••" maxlength="10" autocomplete="off">
+                        <button id="loginBtn" class="login-btn">دخول</button>
+                        <button id="changePasswordBtn" class="change-pass-btn">🔑 تغيير كلمة المرور</button>
+                        <div id="loginError" class="login-error"></div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                
+                const passwordInput = document.getElementById('loginPassword');
+                const loginBtn = document.getElementById('loginBtn');
+                const changeBtn = document.getElementById('changePasswordBtn');
+                const errorDiv = document.getElementById('loginError');
+                
+                const attemptLogin = () => {
+                    const password = passwordInput.value;
+                    if (this.verifyPassword(password)) {
+                        this.createSession();
+                        overlay.remove();
+                        if (onSuccess) onSuccess();
+                    } else {
+                        errorDiv.textContent = '⚠️ كلمة المرور غير صحيحة';
+                        errorDiv.style.display = 'block';
+                        passwordInput.value = '';
+                        passwordInput.focus();
+                    }
+                };
+                
+                loginBtn.onclick = attemptLogin;
+                passwordInput.onkeypress = (e) => { if (e.key === 'Enter') attemptLogin(); };
+                
+                changeBtn.onclick = () => {
+                    const oldPass = prompt('🔐 أدخل كلمة المرور الحالية:');
+                    if (!oldPass) return;
+                    if (!this.verifyPassword(oldPass)) {
+                        alert('⚠️ كلمة المرور الحالية غير صحيحة');
+                        return;
+                    }
+                    const newPass = prompt('🔐 أدخل كلمة المرور الجديدة (4 أرقام أو أكثر):');
+                    if (!newPass || newPass.length < 4) {
+                        alert('⚠️ كلمة المرور الجديدة يجب أن تكون 4 أرقام أو أكثر');
+                        return;
+                    }
+                    const confirmPass = prompt('🔐 أعد إدخال كلمة المرور الجديدة:');
+                    if (newPass !== confirmPass) {
+                        alert('⚠️ كلمة المرور غير متطابقة');
+                        return;
+                    }
+                    localStorage.setItem('neovision_admin_password', newPass);
+                    this.createSession();
+                    alert('✅ تم تغيير كلمة المرور بنجاح');
+                };
+                
+                passwordInput.focus();
+            }
+        };
+        
+        const App = {
+            activeTab: 'dashboard',
+            students: [],
+            results: [],
+            uploadLogs: [],
+            isAuthenticated: false,
+            saveTimeout: null,
+            gradeLevels: [
+                { id: 1, name: 'KG1' }, { id: 2, name: 'KG2' },
+                { id: 3, name: 'الصف الأول الابتدائي' }, { id: 4, name: 'الصف الثاني الابتدائي' },
+                { id: 5, name: 'الصف الثالث الابتدائي' }, { id: 6, name: 'الصف الرابع الابتدائي' },
+                { id: 7, name: 'الصف الخامس الابتدائي' }, { id: 8, name: 'الصف السادس الابتدائي' },
+                { id: 9, name: 'الصف الأول الإعدادي' }, { id: 10, name: 'الصف الثاني الإعدادي' },
+                { id: 11, name: 'الصف الثالث الإعدادي' }, { id: 12, name: 'الصف الأول الثانوي' },
+                { id: 13, name: 'الصف الثاني الثانوي' }, { id: 14, name: 'الصف الثالث الثانوي' }
+            ],
+            
+            filters: { grade: '', semester: '', year: '', hideFilter: 'all', search: '' },
+            batchFilters: { grade: '', semester: 'first', year: '2026' },
+            
+            init() {
+                if (Auth.checkAuth()) {
+                    this.isAuthenticated = true;
+                    this.loadData();
+                    this.render();
+                    window.addEventListener('beforeunload', () => { this.saveData(); });
+                } else {
+                    Auth.showLoginScreen(() => {
+                        this.isAuthenticated = true;
+                        this.loadData();
+                        this.render();
+                    });
+                }
+            },
+            
+            logout() { Auth.logout(); },
+            
+            loadData() {
+                try {
+                    this.students = JSON.parse(localStorage.getItem('neovision_students') || '[]');
+                    this.results = JSON.parse(localStorage.getItem('neovision_results') || '[]');
+                    this.uploadLogs = JSON.parse(localStorage.getItem('neovision_uploads') || '[]');
+                    console.log('📊 تم تحميل:', this.students.length, 'طالب،', this.results.length, 'نتيجة');
+                } catch(e) { console.error(e); }
+            },
+            
+            showSaveIndicator() {
+                const indicator = document.getElementById('saveIndicator');
+                if (indicator) {
+                    indicator.classList.add('show');
+                    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+                    this.saveTimeout = setTimeout(() => indicator.classList.remove('show'), 1500);
+                }
+            },
+            
+            saveData() {
+                localStorage.setItem('neovision_students', JSON.stringify(this.students));
+                localStorage.setItem('neovision_results', JSON.stringify(this.results));
+                localStorage.setItem('neovision_uploads', JSON.stringify(this.uploadLogs));
+                this.showSaveIndicator();
+            },
+            
+            exportToJson() {
+                // تصدير البيانات مع التأكد من أن جميع النتائج الظاهرة فقط
+                const visibleResults = this.results.filter(r => !r.is_hidden);
+                const data = {
+                    students: this.students,
+                    results: visibleResults, // تصدير النتائج الظاهرة فقط
+                    lastUpdated: new Date().toISOString(),
+                    totalStudents: this.students.length,
+                    totalResults: visibleResults.length,
+                    version: '2.0'
+                };
+                const jsonStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'data.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.showMessage(`✅ تم تحميل ملف data.json بنجاح!<br>📊 يحتوي على ${this.students.length} طالب و ${visibleResults.length} نتيجة ظاهرة.<br>📌 قم برفع هذا الملف إلى مجلد موقعك على GitHub`, 'success');
+            },
+            
+            uploadExcelFile(file, gradeLevelId, semester, year) {
+                if (!file) { this.showMessage('الرجاء اختيار ملف', 'error'); return; }
+                this.showMessage('جاري معالجة الملف...', 'success');
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        
+                        if (!rows || rows.length < 2) { this.showMessage('الملف فارغ', 'error'); return; }
+                        
+                        const headers = rows[0];
+                        let nationalColIndex = -1, nameColIndex = -1, seatColIndex = -1;
+                        
+                        for (let j = 0; j < headers.length; j++) {
+                            const colName = headers[j]?.toString().trim() || '';
+                            if (colName.includes('الرقم القومي') || colName.includes('رقم قومي')) nationalColIndex = j;
+                            if (colName.includes('اسم الطالب') || colName.includes('اسم')) nameColIndex = j;
+                            if (colName.includes('جلوس') || colName.includes('seat')) seatColIndex = j;
+                        }
+                        
+                        if (nationalColIndex === -1 || nameColIndex === -1) {
+                            this.showMessage('⚠️ يجب أن يحتوي الملف على عمود "الرقم القومي" و "اسم الطالب"', 'error');
+                            return;
+                        }
+                        
+                        const subjectColumns = [];
+                        for (let j = 0; j < headers.length; j++) {
+                            if (j === nationalColIndex || j === nameColIndex || j === seatColIndex) continue;
+                            const subjectName = headers[j]?.toString().trim();
+                            if (subjectName) subjectColumns.push({ index: j, name: subjectName });
+                        }
+                        
+                        const addedKeywords = ['اللغة العربية', 'اللغة الانجليزية', 'الرياضيات', 'العلوم', 'التاريخ', 'الفيزياء', 'الكيمياء', 'الدراسات'];
+                        const notAddedKeywords = ['التربية الدينية', 'اللغة الأجنبية الثانية', 'البرمجة', 'التربية الفنية', 'التربية الوطنية', 'ICT'];
+                        
+                        const isAddedMap = subjectColumns.map(col => {
+                            for (let kw of notAddedKeywords) if (col.name.includes(kw)) return false;
+                            for (let kw of addedKeywords) if (col.name.includes(kw)) return true;
+                            return false;
+                        });
+                        
+                        let newResults = [], counter = 0, studentsCount = 0;
+                        
+                        for (let i = 1; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!row) continue;
+                            
+                            let nationalId = row[nationalColIndex]?.toString().trim();
+                            let studentName = row[nameColIndex]?.toString().trim();
+                            let seatNumber = (seatColIndex !== -1 && row[seatColIndex]) ? row[seatColIndex]?.toString().trim() : '';
+                            
+                            if (!nationalId || !studentName) continue;
+                            if (nationalId.length !== 14 || isNaN(nationalId)) continue;
+                            
+                            studentsCount++;
+                            
+                            let student = this.students.find(s => s.nationalId === nationalId);
+                            if (!student) {
+                                student = {
+                                    id: Date.now() + counter++,
+                                    nationalId, name: studentName,
+                                    seatNumber: seatNumber || '',
+                                    grade_level_id: gradeLevelId,
+                                    academic_year: year,
+                                    created_at: new Date().toISOString()
+                                };
+                                this.students.push(student);
+                            } else if (seatNumber && !student.seatNumber) {
+                                student.seatNumber = seatNumber;
+                            }
+                            
+                            let orderIndex = 0;
+                            for (let colIdx = 0; colIdx < subjectColumns.length; colIdx++) {
+                                const col = subjectColumns[colIdx];
+                                let subjectGrade = row[col.index]?.toString().trim();
+                                if (!subjectGrade || subjectGrade === "") subjectGrade = "—";
+                                
+                                newResults.push({
+                                    id: Date.now() + counter++,
+                                    student_id: student.id,
+                                    grade_level_id: gradeLevelId,
+                                    semester: semester,
+                                    academic_year: year,
+                                    subject_name: col.name,
+                                    subject_grade: subjectGrade,
+                                    is_hidden: false,
+                                    is_empty: (subjectGrade === "—"),
+                                    is_added_to_total: isAddedMap[colIdx],
+                                    display_order: orderIndex++,
+                                    upload_date: new Date().toISOString(),
+                                    upload_filename: file.name
+                                });
+                            }
+                        }
+                        
+                        if (studentsCount === 0) { this.showMessage('لم يتم العثور على بيانات صالحة', 'error'); return; }
+                        
+                        this.results.push(...newResults);
+                        this.uploadLogs.unshift({
+                            id: Date.now(), filename: file.name, grade_level_id: gradeLevelId,
+                            academic_year: year, semester: semester, records_count: newResults.length,
+                            students_count: studentsCount, upload_date: new Date().toISOString()
+                        });
+                        
+                        this.saveData();
+                        this.showMessage(`✅ تم رفع ${newResults.length} مادة لعدد ${studentsCount} طالب`, 'success');
+                        this.filters = { grade: gradeLevelId.toString(), semester: semester, year: year, hideFilter: 'all', search: '' };
+                        this.render();
+                    } catch(err) { this.showMessage('خطأ: ' + err.message, 'error'); }
+                };
+                reader.readAsArrayBuffer(file);
+            },
+            
+            toggleResult(resultId) {
+                const result = this.results.find(r => r.id == resultId);
+                if (result) {
+                    result.is_hidden = !result.is_hidden;
+                    this.saveData();
+                    this.showMessage(`تم ${result.is_hidden ? 'إخفاء' : 'إظهار'} النتيجة`, 'success');
+                    this.render();
+                }
+            },
+            
+            deleteResult(resultId) {
+                if (confirm('هل أنت متأكد من حذف هذه النتيجة؟')) {
+                    this.results = this.results.filter(r => r.id != resultId);
+                    this.saveData();
+                    this.showMessage('تم حذف النتيجة', 'success');
+                    this.render();
+                }
+            },
+            
+            deleteUpload(uploadId) {
+                if (confirm('هل أنت متأكد من حذف سجل الرفع وجميع النتائج المرتبطة به؟')) {
+                    const upload = this.uploadLogs.find(u => u.id == uploadId);
+                    if (upload) {
+                        // حذف النتائج المرتبطة بنفس الملف
+                        this.results = this.results.filter(r => r.upload_filename !== upload.filename);
+                        this.uploadLogs = this.uploadLogs.filter(u => u.id != uploadId);
+                        this.saveData();
+                        this.showMessage('تم حذف السجل والنتائج المرتبطة', 'success');
+                        this.render();
+                    }
+                }
+            },
+            
+            bulkActions(action) {
+                const checkboxes = document.querySelectorAll('.result-checkbox:checked');
+                const ids = Array.from(checkboxes).map(cb => parseInt(cb.dataset.resultId));
+                if (ids.length === 0) { this.showMessage('الرجاء تحديد النتائج', 'error'); return; }
+                this.results.forEach(r => { if (ids.includes(r.id)) r.is_hidden = (action === 'hide'); });
+                this.saveData();
+                this.showMessage(`تم ${action === 'hide' ? 'إخفاء' : 'إظهار'} ${ids.length} نتيجة`, 'success');
+                this.render();
+            },
+            
+            showMessage(message, type) {
+                const oldMsg = document.querySelector('.alert');
+                if (oldMsg) oldMsg.remove();
+                const div = document.createElement('div');
+                div.className = `alert alert-${type}`;
+                div.innerHTML = message;
+                document.querySelector('.container')?.insertBefore(div, document.querySelector('.container').firstChild);
+                setTimeout(() => div.remove(), 4000);
+            },
+            
+            getStats() {
+                return {
+                    totalStudents: this.students.length,
+                    totalResults: this.results.length,
+                    hiddenResults: this.results.filter(r => r.is_hidden).length,
+                    totalUploads: this.uploadLogs.length
+                };
+            },
+            
+            getFilteredResults() {
+                let filtered = [...this.results];
+                if (this.filters.grade && this.filters.grade !== '') filtered = filtered.filter(r => r.grade_level_id == this.filters.grade);
+                if (this.filters.semester && this.filters.semester !== '') filtered = filtered.filter(r => r.semester === this.filters.semester);
+                if (this.filters.year && this.filters.year !== '') filtered = filtered.filter(r => r.academic_year === this.filters.year);
+                if (this.filters.hideFilter === 'visible') filtered = filtered.filter(r => !r.is_hidden);
+                if (this.filters.hideFilter === 'hidden') filtered = filtered.filter(r => r.is_hidden);
+                return filtered;
+            },
+            
+            getStudentsWithResults() {
+                let filteredResults = this.getFilteredResults();
+                if (this.filters.search && this.filters.search !== '') {
+                    const studentIds = this.students.filter(s => s.name.includes(this.filters.search)).map(s => s.id);
+                    filteredResults = filteredResults.filter(r => studentIds.includes(r.student_id));
+                }
+                const map = new Map();
+                filteredResults.forEach(r => {
+                    const student = this.students.find(s => s.id === r.student_id);
+                    if (student) {
+                        if (!map.has(student.id)) map.set(student.id, { ...student, results: [] });
+                        map.get(student.id).results.push(r);
+                    }
+                });
+                for (let student of map.values()) student.results.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+                return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+            },
+            
+            exportToExcel() {
+                const studentsData = this.getStudentsWithResults();
+                if (studentsData.length === 0) { this.showMessage('لا توجد بيانات للتصدير', 'error'); return; }
+                const exportData = [];
+                studentsData.forEach(student => {
+                    student.results.forEach(result => {
+                        exportData.push({
+                            'اسم الطالب': student.name, 'الرقم القومي': student.nationalId,
+                            'رقم الجلوس': student.seatNumber || '', 'المرحلة': this.gradeLevels.find(g => g.id == student.grade_level_id)?.name || '',
+                            'السنة الدراسية': result.academic_year, 'الفصل الدراسي': result.semester === 'first' ? 'الأول' : 'الثاني',
+                            'المادة': result.subject_name, 'الدرجة': result.is_empty ? '—' : result.subject_grade,
+                            'الحالة': result.is_hidden ? 'محجوبة' : (result.is_empty ? 'فارغة' : 'ظاهرة'),
+                            'مضافة للمجموع': result.is_added_to_total ? 'نعم' : 'لا'
+                        });
+                    });
+                });
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'النتائج');
+                XLSX.writeFile(wb, `نتائج_نيو_فيجن_${new Date().toISOString().slice(0,19)}.xlsx`);
+                this.showMessage(`✅ تم تصدير ${exportData.length} سجل`, 'success');
+            },
+            
+            printAllResults() {
+                const studentsData = this.getStudentsWithResults();
+                if (studentsData.length === 0) { this.showMessage('لا توجد نتائج للطباعة', 'error'); return; }
+                const gradeName = this.filters.grade ? (this.gradeLevels.find(g => g.id == this.filters.grade)?.name || this.filters.grade) : 'الكل';
+                const semesterName = this.filters.semester === 'first' ? 'الأول' : (this.filters.semester === 'second' ? 'الثاني' : (this.filters.semester || 'الكل'));
+                let printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html dir="rtl"><head><title>طباعة النتائج</title>
+                    <style>body{font-family:Arial;margin:20px} .student-block{margin-bottom:30px;border:1px solid #ddd;border-radius:10px} .student-header{background:#2c3e50;color:white;padding:10px} table{width:100%;border-collapse:collapse} th,td{padding:8px;border:1px solid #ddd;text-align:center} .added-row{background:#e6fffa} @media print{.page-break{page-break-before:always}}</style>
+                    </head><body>
+                    <div style="text-align:center"><h2>مدارس نيو فيجن الخاصة</h2><p>كشف النتائج - المرحلة: ${gradeName} - الفصل: ${semesterName}</p></div>
+                `);
+                studentsData.forEach((student, index) => {
+                    printWindow.document.write(`
+                        <div class="student-block"><div class="student-header"><strong>${this.escapeHtml(student.name)}</strong> - 🆔 ${student.nationalId} - 📚 ${this.gradeLevels.find(g => g.id == student.grade_level_id)?.name || ''}</div>
+                        <table><thead><tr><th>المادة</th><th>الدرجة</th><th>النوع</th></tr></thead>
+                        <tbody>${student.results.filter(r => !r.is_hidden).map(r => `<tr class="${r.is_added_to_total ? 'added-row' : ''}"><td>${this.escapeHtml(r.subject_name)}</td><td>${this.escapeHtml(r.subject_grade)}</td><td>${r.is_added_to_total ? 'مضافة للمجموع' : 'غير مضافة'}</td></tr>`).join('')}
+                        </tbody></table></div>${index < studentsData.length - 1 ? '<div class="page-break"></div>' : ''}
+                    `);
+                });
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                printWindow.print();
+            },
+            
+            renderDashboard() {
+                const stats = this.getStats();
+                const recentUploads = this.uploadLogs.slice(0, 10);
+                return `
+                    <div class="stats-bar">
+                        <div class="stat-box"><div class="stat-number">${stats.totalStudents}</div><div class="stat-label">👨‍🎓 إجمالي الطلاب</div></div>
+                        <div class="stat-box"><div class="stat-number">${stats.totalResults}</div><div class="stat-label">📊 المواد المسجلة</div></div>
+                        <div class="stat-box"><div class="stat-number" style="color:#e74c3c;">${stats.hiddenResults}</div><div class="stat-label">🔒 مواد محجوبة</div></div>
+                        <div class="stat-box"><div class="stat-number">${stats.totalUploads}</div><div class="stat-label">📁 عمليات رفع</div></div>
+                    </div>
+                    <div class="card" style="background:#e8f4fd; border-right:4px solid #3498db;">
+                        <div class="card-header" style="background:#2980b9;">📤 نشر البيانات على الإنترنت</div>
+                        <div class="card-body">
+                            <button id="exportToJsonBtn" class="btn btn-json" style="background:#8e44ad; padding:15px 30px; font-size:16px;">📥 تحميل ملف البيانات (data.json)</button>
+                            <div class="json-instructions">
+                                <strong>📌 تعليمات النشر على GitHub:</strong><br>
+                                1. اضغط على الزر لتحميل ملف data.json<br>
+                                2. قم برفع هذا الملف إلى نفس مجلد موقعك على GitHub<br>
+                                3. الطلاب سيدخلون على student.html ويدخلون الرقم القومي فقط<br>
+                                4. <strong style="color:#e74c3c;">ملاحظة:</strong> data.json يحتوي فقط على النتائج الظاهرة (غير المحجوبة)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card"><div class="card-header">📤 رفع ملف نتائج جديد</div><div class="card-body">
+                        <form id="uploadForm"><div class="form-group"><label>🎓 المرحلة:</label><select id="gradeLevel" required><option value="">اختر المرحلة</option>${this.gradeLevels.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}</select></div>
+                        <div class="form-group"><label>📖 الفصل:</label><select id="semester" required><option value="first">الأول</option><option value="second">الثاني</option></select></div>
+                        <div class="form-group"><label>📅 السنة:</label><select id="academicYear"><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option></select></div>
+                        <div class="form-group"><label>📎 ملف Excel:</label><input type="file" id="excelFile" accept=".xlsx, .xls, .csv" required></div>
+                        <button type="submit" class="btn btn-primary">🚀 رفع الملف</button></form>
+                    </div></div>
+                    <div class="card"><div class="card-header">📋 عمليات الرفع السابقة</div><div class="card-body">
+                        ${recentUploads.length > 0 ? `<div style="overflow-x:auto;"><table class="table"><thead><tr><th>#</th><th>الملف</th><th>المرحلة</th><th>التاريخ</th><th></th></tr></thead>
+                        <tbody>${recentUploads.map((u, i) => `<tr><td>${i+1}</td><td>${this.escapeHtml(u.filename)}</td><td>${this.gradeLevels.find(g => g.id == u.grade_level_id)?.name || '-'}</td><td>${new Date(u.upload_date).toLocaleString('ar')}</td>
+                        <td><button class="btn btn-danger btn-sm" onclick="App.deleteUpload(${u.id})">🗑️ حذف</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="no-data-message">لا توجد عمليات رفع</p>'}
+                    </div></div>
+                `;
+            },
+            
+            renderResults() {
+                const studentsData = this.getStudentsWithResults();
+                const filtered = this.getFilteredResults();
+                
+                const availableYears = [...new Set(this.results.map(r => r.academic_year))];
+                
+                return `
+                    <div class="stats-bar">
+                        <div class="stat-box"><div class="stat-number">${studentsData.length}</div><div class="stat-label">👨‍🎓 عدد الطلاب</div></div>
+                        <div class="stat-box"><div class="stat-number">${filtered.length}</div><div class="stat-label">📊 المواد المعروضة</div></div>
+                        <div class="stat-box"><div class="stat-number" style="color:#27ae60;">${filtered.filter(r => !r.is_hidden).length}</div><div class="stat-label">✅ ظاهرة</div></div>
+                        <div class="stat-box"><div class="stat-number" style="color:#e74c3c;">${filtered.filter(r => r.is_hidden).length}</div><div class="stat-label">🔒 محجوبة</div></div>
+                    </div>
+                    <div class="filter-bar"><form class="filter-form" id="filterForm">
+                        <div class="form-group"><label>المرحلة</label><select name="grade"><option value="">الكل</option>${this.gradeLevels.map(g => `<option value="${g.id}" ${this.filters.grade == g.id ? 'selected' : ''}>${g.name}</option>`).join('')}</select></div>
+                        <div class="form-group"><label>الفصل</label><select name="semester"><option value="">الكل</option><option value="first" ${this.filters.semester === 'first' ? 'selected' : ''}>الأول</option><option value="second" ${this.filters.semester === 'second' ? 'selected' : ''}>الثاني</option></select></div>
+                        <div class="form-group"><label>السنة</label><select name="year"><option value="">الكل</option>${availableYears.map(y => `<option value="${y}" ${this.filters.year === y ? 'selected' : ''}>${y}</option>`).join('')}</select></div>
+                        <div class="form-group"><label>الحالة</label><select name="hideFilter"><option value="all" ${this.filters.hideFilter === 'all' ? 'selected' : ''}>الكل</option><option value="visible" ${this.filters.hideFilter === 'visible' ? 'selected' : ''}>الظاهرة</option><option value="hidden" ${this.filters.hideFilter === 'hidden' ? 'selected' : ''}>المخفية</option></select></div>
+                        <div class="form-group"><label>بحث</label><input type="text" name="search" value="${this.escapeHtml(this.filters.search)}" placeholder="اسم الطالب"></div>
+                        <div class="form-group"><button type="submit" class="btn btn-primary">🔍 بحث</button><button type="button" id="resetFilters" class="btn" style="background:#e2e8f0;">إعادة تعيين</button></div>
+                    </form></div>
+                    <div class="export-buttons"><button class="btn btn-success" id="exportExcelBtn">📎 تصدير إلى Excel</button><button class="btn btn-primary" id="printAllBtn">🖨️ طباعة الكل</button></div>
+                    <div class="bulk-actions"><button class="btn btn-sm btn-success" id="bulkShowBtn">✅ إظهار المحدد</button><button class="btn btn-sm btn-danger" id="bulkHideBtn">🔒 إخفاء المحدد</button><label><input type="checkbox" id="selectAll"> تحديد الكل</label></div>
+                    <div id="studentsContainer">${studentsData.map(student => {
+                        const gradeName = this.gradeLevels.find(g => g.id == student.grade_level_id)?.name || '-';
+                        const hiddenCount = student.results.filter(r => r.is_hidden).length;
+                        const emptyCount = student.results.filter(r => r.is_empty).length;
+                        return `<div class="student-card"><div class="student-card-header" onclick="this.closest('.student-card').classList.toggle('expanded')">
+                            <div class="student-info"><div class="student-name">📚 ${this.escapeHtml(student.name)}</div><div class="student-detail">${gradeName}</div><div class="student-detail">📅 ${student.academic_year || '-'}</div>${student.seatNumber ? `<div class="student-detail">🪑 ${this.escapeHtml(student.seatNumber)}</div>` : ''}${hiddenCount > 0 ? `<div class="badge-hidden-count">🔒 ${hiddenCount}</div>` : ''}${emptyCount > 0 ? `<div class="badge-hidden-count" style="background:#f59e0b;">⚠️ ${emptyCount}</div>` : ''}</div>
+                            <span class="expand-icon">▼</span>
+                        </div><div class="student-card-body"><div style="overflow-x:auto;"><table class="courses-table"><thead><tr><th class="checkbox-col"><input type="checkbox" class="group-checkbox" data-student="${student.id}"></th><th>📖 المادة</th><th>⭐ الدرجة</th><th>🔐 الحالة</th><th>📌 النوع</th><th>⚙️ إجراءات</th></tr></thead>
+                        <tbody>${student.results.map(result => {
+                            const isEmpty = result.is_empty || result.subject_grade === "—";
+                            const badgeClass = result.is_hidden ? 'badge-hidden' : (isEmpty ? 'badge-empty' : (result.is_added_to_total ? 'badge-visible' : 'badge-empty'));
+                            const badgeText = result.is_hidden ? 'محجوبة' : (isEmpty ? 'فارغة' : (result.is_added_to_total ? 'مضافة' : 'غير مضافة'));
+                            return `<tr style="${!result.is_hidden && result.is_added_to_total ? 'background:#e6fffa;' : (result.is_hidden ? 'background:#fef2f2;' : '')}">
+                                <td class="checkbox-col"><input type="checkbox" class="result-checkbox" data-result-id="${result.id}"></td>
+                                <td>${this.escapeHtml(result.subject_name)}</td>
+                                <td><strong>${this.escapeHtml(isEmpty ? '—' : result.subject_grade)}</strong></td>
+                                <td><span class="${badgeClass}">${badgeText}</span></td>
+                                <td>${result.is_added_to_total ? '✅ مضاف' : '⚠️ غير مضاف'}</td>
+                                <td><button class="toggle-link" onclick="App.toggleResult(${result.id})">${result.is_hidden ? '👁️ إظهار' : '🔒 إخفاء'}</button>
+                                <button class="toggle-link" onclick="App.deleteResult(${result.id})" style="background:#fee;color:#c53030;">🗑️ حذف</button></td>
+                            </tr>`;
+                        }).join('')}</tbody></table></div></div></div>`;
+                    }).join('')}</div>
+                `;
+            },
+            
+            render() {
+                if (!this.isAuthenticated) return;
+                const app = document.getElementById('app');
+                app.innerHTML = `
+                    <div class="header"><div class="header-content">
+                        <div class="logo-section"><img src="نيو فيجن.jpg" class="logo-img" onerror="this.src='https://placehold.co/50x50/ff8c00/white?text=NV'"><div><div class="logo-text">🏫 نظام نتائج مدارس نيو فيجن الخاصة</div><div class="subtitle">New Vision Private Schools - لوحة الإدارة</div></div></div>
+                        <div class="nav-links">
+                            <button class="${this.activeTab === 'dashboard' ? 'active' : ''}" data-tab="dashboard">📊 لوحة التحكم</button>
+                            <button class="${this.activeTab === 'results' ? 'active' : ''}" data-tab="results">📖 عرض المواد</button>
+                            <a href="student.html" id="studentPageLink" class="student-link">🔍 صفحة الاستعلام للطلاب</a>
+                            <button id="logoutHeaderBtn" class="logout-header-btn">🚪 تسجيل خروج</button>
+                        </div>
+                    </div></div>
+                    <div class="container">${this.activeTab === 'dashboard' ? this.renderDashboard() : this.renderResults()}</div>
+                `;
+                this.bindEvents();
+            },
+            
+            bindEvents() {
+                document.querySelectorAll('[data-tab]').forEach(btn => {
+                    btn.addEventListener('click', () => { this.activeTab = btn.dataset.tab; this.render(); });
+                });
+                document.getElementById('logoutHeaderBtn')?.addEventListener('click', () => this.logout());
+                document.getElementById('studentPageLink')?.addEventListener('click', () => this.saveData());
+                document.getElementById('exportToJsonBtn')?.addEventListener('click', () => this.exportToJson());
+                document.getElementById('uploadForm')?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const file = document.getElementById('excelFile').files[0];
+                    const gradeLevelId = parseInt(document.getElementById('gradeLevel').value);
+                    const semester = document.getElementById('semester').value;
+                    const year = document.getElementById('academicYear').value;
+                    if (!gradeLevelId) { this.showMessage('اختر المرحلة', 'error'); return; }
+                    if (!file) { this.showMessage('اختر ملف', 'error'); return; }
+                    this.uploadExcelFile(file, gradeLevelId, semester, year);
+                });
+                document.getElementById('filterForm')?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.target);
+                    this.filters = {
+                        grade: fd.get('grade') || '',
+                        semester: fd.get('semester') || '',
+                        year: fd.get('year') || '',
+                        hideFilter: fd.get('hideFilter') || 'all',
+                        search: fd.get('search') || ''
+                    };
+                    this.render();
+                });
+                document.getElementById('resetFilters')?.addEventListener('click', () => {
+                    this.filters = { grade: '', semester: '', year: '', hideFilter: 'all', search: '' };
+                    this.render();
+                });
+                document.getElementById('bulkShowBtn')?.addEventListener('click', () => this.bulkActions('show'));
+                document.getElementById('bulkHideBtn')?.addEventListener('click', () => this.bulkActions('hide'));
+                document.getElementById('exportExcelBtn')?.addEventListener('click', () => this.exportToExcel());
+                document.getElementById('printAllBtn')?.addEventListener('click', () => this.printAllResults());
+                document.getElementById('selectAll')?.addEventListener('change', (e) => {
+                    document.querySelectorAll('.result-checkbox').forEach(cb => cb.checked = e.target.checked);
+                });
+            },
+            
+            deleteUpload(uploadId) {
+                if (confirm('هل أنت متأكد من حذف سجل الرفع وجميع النتائج المرتبطة به؟')) {
+                    const upload = this.uploadLogs.find(u => u.id == uploadId);
+                    if (upload) {
+                        this.results = this.results.filter(r => r.upload_filename !== upload.filename);
+                        this.uploadLogs = this.uploadLogs.filter(u => u.id != uploadId);
+                        this.saveData();
+                        this.showMessage('تم حذف السجل والنتائج المرتبطة', 'success');
+                        this.render();
+                    }
+                }
+            },
+            
+            escapeHtml(text) { if (!text) return ''; return String(text).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+        };
+        
+        window.App = App;
+        App.init();
+    </script>
+</body>
+</html>
